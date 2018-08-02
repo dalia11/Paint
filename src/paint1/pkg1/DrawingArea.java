@@ -1,0 +1,683 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package paint1.pkg1;
+
+import java.awt.Color;
+import static java.awt.Color.BLACK;
+import java.awt.Cursor;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Polygon;
+import java.awt.geom.AffineTransform;
+import java.util.ArrayList;
+import java.awt.geom.Ellipse2D;
+import java.util.Iterator;
+import java.util.Stack;
+import javax.swing.SwingUtilities;
+
+/**
+ *
+ * @author Nada
+ */
+public class DrawingArea extends javax.swing.JPanel implements Container {
+
+    ArrayList<Shape> shapes = new ArrayList();
+    private int shapeid;
+    Point P1, P2, P3;
+    Color drawColor = Color.BLACK;
+    private Shape currentShape = null;
+    ArrayList<Do> History = new ArrayList<>();
+    Shape resizedShape;
+    boolean fill = false;
+    Stack<Do> s1 = new Stack<Do>();
+    Stack<Do> s2 = new Stack<Do>();
+    private Factory sf = Factory.getInstance();
+    private State currentstate;
+
+    public State getCurrentstate() {
+        return currentstate;
+    }
+
+    public void setCurrentstate(State currentstate) {
+
+        this.currentstate = currentstate;
+        if (currentstate != null) {
+            currentstate.doActioms(this);
+        }
+
+    }
+
+    public void rotate() {
+        if (currentShape != null) {
+            currentShape.rotate = true;
+        }
+        repaint();
+    }
+
+    @Override
+    public Iterator getIterator() {
+        return new ShapeIterator();
+    }
+
+    enum modes {
+        Draw, Select, resize, undo, redo,copy
+    };
+    modes current = modes.Draw;
+
+    public modes getCurrent() {
+        return current;
+    }
+
+    public void setCurrent(modes current) {
+        this.current = current;
+    }
+
+    public int getShapeid() {
+        return shapeid;
+    }
+
+    public void setShapeid(int shapeid) {
+        this.shapeid = shapeid;
+    }
+    ArrayList<Observes> obs = new ArrayList<>();
+
+    public void attach(Observes o) {
+        obs.add(o);
+    }
+
+    public void notifyALLobs() {
+        for (Observes v : obs) {
+            v.update();
+        }
+    }
+
+    public void addHisto(Do D) {
+        History.add(D);
+        notifyALLobs();
+    }
+
+    /**
+     * Creates new form DrawingArea
+     */
+    public DrawingArea() {
+        initComponents();
+        setCurrentstate(new drawingstate());
+    }
+
+    public void deleteselectedshape() {
+        if (currentShape != null) {
+            shapes.remove(currentShape);
+            Do a = new Do(1);
+            a.addShape(currentShape);
+            s1.push(a);
+            currentShape = null;
+            repaint();
+        }
+    }
+    public void removeHistory(Do h) {
+        History.remove(h);
+        notifyALLobs();
+    }
+
+    public void undo() {
+
+        if (!s1.isEmpty()) {
+            Do D = s1.pop();
+             removeHistory(D); 
+            s2.push(D);
+
+            if (D.getT() == 0) {
+                for (Shape shape : D.getS()) {
+                    shapes.remove(shape);
+                }
+
+            } else {
+                for (Shape shape : D.getS()) {
+                    shapes.add(shape);
+                }
+            }
+        }
+
+        repaint();
+        //}
+
+    }
+
+    public void Rotate() {
+        if (currentShape != null) {
+            currentShape.degree += 45;
+//    currentShape.degree+=angle;
+        }
+        repaint();
+
+    }
+    public void addHistory(Do h) {
+        History.add(h);
+        notifyALLobs();
+    }
+
+    public void redo() {
+        if (s2.isEmpty() == false) {
+            
+            Do a = s2.pop();
+            History.add(a);
+            s1.push(a);
+
+            if (a.getT() == 0) {
+                for (Shape shape : a.getS()) {
+                    shapes.add(shape);
+                }
+
+            } else {
+                for (Shape shape : a.getS()) {
+                    shapes.remove(shape);
+                }
+            }
+
+        }
+
+        repaint();
+    }
+
+    public void clear() {
+        Do a = new Do(1);
+
+        for (Shape shape : shapes) {
+
+            a.addShape(shape);
+
+        }
+        s1.push(a);
+        shapes.clear();
+        repaint();
+    }
+    
+     public void copy() throws CloneNotSupportedException {
+        current = modes.copy;
+        if (currentShape != null) {
+            Do a = new Do(0);
+            currentShape.setSelected(false);
+            Shape s = (Shape) currentShape.clone();
+            s.setSelected(true);
+            shapes.add(s);
+            currentShape = s;
+            a.addShape(s);
+            s1.push(a);
+            repaint();
+        }
+    }
+    
+
+    public boolean isFill() {
+        return fill;
+    }
+
+    public void setFill(boolean fill) {
+        this.fill = fill;
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            public void mouseDragged(java.awt.event.MouseEvent evt) {
+                formMouseDragged(evt);
+            }
+            public void mouseMoved(java.awt.event.MouseEvent evt) {
+                formMouseMoved(evt);
+            }
+        });
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                formMousePressed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+        this.setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 400, Short.MAX_VALUE)
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 300, Short.MAX_VALUE)
+        );
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void formMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMousePressed
+        // TODO add your handling code here:
+        P1 = new Point(evt.getX(), evt.getY());
+
+        if (current == modes.Draw) {
+            Do a = new Do(0);
+            if (shapeid == 0) {
+                Line L = (Line) sf.getShape("Line");
+
+                L.setSt(P1);
+                L.setTwo(P1);
+                L.setSelected(false);
+                L.setC(drawColor);
+                shapes.add(L);
+
+                a.addShape(L);
+                History.add(a);
+                mFrame f = (mFrame) SwingUtilities.getWindowAncestor(this);
+                f.updateHistory(History);
+            } else if (shapeid == 1) {
+                //Rectangle rect = new Rectangle(0, 0, drawColor, fill, P1
+                Rectangle rect = (Rectangle) sf.getShape("Rectangle");
+                rect.setSt(P1);
+                rect.setHieght(0);
+                rect.setWidth(0);
+                rect.setC(drawColor);
+                rect.setFill(false);
+                shapes.add(rect);
+
+                a.addShape(rect);
+                History.add(a);
+                mFrame f = (mFrame) SwingUtilities.getWindowAncestor(this);
+                f.updateHistory(History);
+            } else if (shapeid == 2) {
+                // Ellipse ellipse = new Ellipse(0, 0, drawColor, fill, P1);
+                Ellipse ellipse = (Ellipse) sf.getShape("Ellipse");
+                ellipse.setSt(P1);
+                ellipse.setHieght(0);
+                ellipse.setWidth(0);
+                ellipse.setC(drawColor);
+                ellipse.setFill(false);
+                shapes.add(ellipse);
+
+                a.addShape(ellipse);
+                History.add(a);
+                mFrame f = (mFrame) SwingUtilities.getWindowAncestor(this);
+                f.updateHistory(History);
+            } else if (shapeid == 3) {
+
+                Triangle t = (Triangle) sf.getShape("Triangle");
+                t.setSt(P1);
+                t.setP2(P1);
+                t.setP3(P1);
+                t.setC(drawColor);
+                t.setFill(false);
+                shapes.add(t);
+
+                a.addShape(t);
+                History.add(a);
+                mFrame f = (mFrame) SwingUtilities.getWindowAncestor(this);
+                f.updateHistory(History);
+            } else if (shapeid == 4) {
+                // Square s = new Square(0, 0, drawColor, fill, P1);
+                Square s = (Square) sf.getShape("Square");
+                s.setSt(P1);
+                s.setHieght(0);
+                s.setWidth(0);
+                s.setC(drawColor);
+                s.setFill(false);
+                shapes.add(s);
+
+                a.addShape(s);
+                History.add(a);
+                mFrame f = (mFrame) SwingUtilities.getWindowAncestor(this);
+                f.updateHistory(History);
+            } else if (shapeid == 5) {
+                //Circle c = new Circle(0, 0, drawColor, fill, P1);
+                Circle c = (Circle) sf.getShape("Circle");
+                c.setSt(P1);
+                c.setHieght(0);
+                c.setWidth(0);
+                c.setFill(false);
+                c.setC(drawColor);
+                shapes.add(c);
+
+                a.addShape(c);
+                History.add(a);
+                mFrame f = (mFrame) SwingUtilities.getWindowAncestor(this);
+                f.updateHistory(History);
+            } else if (shapeid == 6) {
+                
+                Triangle t = (Triangle) sf.getShape("Triangle");
+                t.setSt(P1);
+                t.setP2(P1);
+                t.setP3(P1);
+                t.setC(drawColor);
+                t.setFill(false);
+                shapes.add(t);
+
+                a.addShape(t);
+                History.add(a);
+                mFrame f = (mFrame) SwingUtilities.getWindowAncestor(this);
+                f.updateHistory(History);
+
+            }
+            s1.push(a);
+        } else if (current == modes.Select) {
+            currentShape = null;
+            for (int i = 0; i < shapes.size(); i++) {
+                shapes.get(i).setSelected(false);
+            }
+            for (int i = shapes.size() - 1; i >= 0; i--) {
+                if (shapes.get(i).inShape(evt.getX(), evt.getY())) {
+                    shapes.get(i).setSelected(true);
+
+                    currentShape = shapes.get(i);
+                    break;
+                }
+
+            }
+
+            repaint();
+        } else if (current == modes.resize) {
+            resizedShape = null;
+        }
+        if (currentShape != null) {
+            if (currentShape instanceof Rectangle) {
+                Rectangle r = (Rectangle) currentShape;
+                if (r.UpperLeft(evt.getX(), evt.getY()) || r.LowerLeft(evt.getX(), evt.getY()) || r.UpperRight(evt.getX(), evt.getY()) || r.LowerRight(evt.getX(), evt.getY())) {
+                    resizedShape = currentShape;
+                }
+            }
+            if (currentShape instanceof Line) {
+                Line L = (Line) currentShape;
+                if (L.containLeft(evt.getX(), evt.getY()) || L.containright(evt.getX(), evt.getY())) {
+                    resizedShape = currentShape;
+                }
+            }
+
+            if (currentShape instanceof Ellipse) {
+                Ellipse e = (Ellipse) currentShape;
+                if (e.containuleft(evt.getX(), evt.getY()) || e.containlleft(evt.getX(), evt.getY()) || e.containuright(evt.getX(), evt.getY()) || e.containlright(evt.getX(), evt.getY())) {
+                    resizedShape = currentShape;
+                }
+            }
+            if (currentShape instanceof Triangle) {
+                Triangle r = (Triangle) currentShape;
+                if (r.containuleft(evt.getX(), evt.getY()) || r.containlleft(evt.getX(), evt.getY()) || r.containuright(evt.getX(), evt.getY()) || r.containlright(evt.getX(), evt.getY())) {
+                    resizedShape = currentShape;
+                }
+            }
+            
+            
+        }
+        else if (current == modes.copy) {
+            current = modes.Draw;
+            if (currentShape != null) {
+                currentShape.setSt(P1);
+            }
+            repaint();
+    }                     
+        
+    }//GEN-LAST:event_formMousePressed
+    
+    
+    
+    private void formMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseDragged
+        // TODO add your handling code here:
+        P2 = new Point(evt.getX(), evt.getY());
+        P3 = new Point(evt.getX(), evt.getY());
+        if (current == modes.Draw) {
+            s2.clear();
+            if (shapeid == 0) {
+                Line L = (Line) shapes.get(shapes.size() - 1);
+                L.setTwo(P2);
+            } else if (shapeid == 1) {
+                Rectangle rect = (Rectangle) shapes.get(shapes.size() - 1);
+                rect.setWidth(Math.abs(P2.getX() - P1.getX()));
+                rect.setHieght(Math.abs(P2.getY() - P1.getY()));
+                if (P2.getX() < P1.getX() && P2.getY() < P1.getY()) {
+                    rect.setSt(P2);
+                } else if (P1.getX() > P2.getX() && P1.getY() < P2.getY()) {
+                    rect.setSt(new Point(P2.getX(), P1.getY()));
+                } else if (P2.getX() > P1.getX() && P2.getY() < P1.getY()) {
+                    rect.setSt(new Point(P1.getX(), P2.getY()));
+                }
+            } else if (shapeid == 2) {
+                Ellipse e = (Ellipse) shapes.get(shapes.size() - 1);
+                e.setWidth(Math.abs(P2.getX() - P1.getX()));
+                e.setHieght(Math.abs(P2.getY() - P1.getY()));
+                if (P2.getX() < P1.getX() && P2.getY() < P1.getY()) {
+                    e.setSt(P2);
+                } else if (P1.getX() > P2.getX() && P1.getY() < P2.getY()) {
+                    e.setSt(new Point(P2.getX(), P1.getY()));
+                } else if (P2.getX() > P1.getX() && P2.getY() < P1.getY()) {
+                    e.setSt(new Point(P1.getX(), P2.getY()));
+                }
+            } else if (shapeid == 3) {
+                Triangle t = (Triangle) shapes.get(shapes.size() - 1);
+                t.setP2(P2);
+                t.setP3(new Point(P1.getX(), P2.getY()));
+                
+//           if(P2.getX()<P1.getX()&&P2.getY()<P1.getY())
+//                t.setSt(P2);
+//            else if(P1.getX()>P2.getX()&&P1.getY()<P2.getY())
+//                t.setSt(new  Point(P2.getX(),P1.getY()));
+//            else if(P2.getX()>P1.getX()&&P2.getY()<P1.getY())
+//                t.setSt(new Point(P1.getX(),P2.getY()));
+
+            } else if (shapeid == 4) {
+                Square s = (Square) shapes.get(shapes.size() - 1);
+                s.setWidth(Math.abs(P2.getX() - P1.getX()));
+                s.setHieght(Math.abs(P2.getX() - P1.getX()));
+                if (P2.getX() < P1.getX() && P2.getY() < P1.getY()) {
+                    s.setSt(P2);
+                } else if (P1.getX() > P2.getX() && P1.getY() < P2.getY()) {
+                    s.setSt(new Point(P2.getX(), P1.getY()));
+                } else if (P2.getX() > P1.getX() && P2.getY() < P1.getY()) {
+                    s.setSt(new Point(P1.getX(), P2.getY()));
+                }
+            } else if (shapeid == 5) {
+                Circle c = (Circle) shapes.get(shapes.size() - 1);
+                c.setWidth(Math.abs(P2.getX() - P1.getX()));
+                c.setHieght(Math.abs(P2.getX() - P1.getX()));
+                if (P2.getX() < P1.getX() && P2.getY() < P1.getY()) {
+                    c.setSt(P2);
+                } else if (P1.getX() > P2.getX() && P1.getY() < P2.getY()) {
+                    c.setSt(new Point(P2.getX(), P1.getY()));
+                } else if (P2.getX() > P1.getX() && P2.getY() < P1.getY()) {
+                    c.setSt(new Point(P1.getX(), P2.getY()));
+                }
+            }
+        } else if (current == modes.Select) {
+            if (currentShape != null) {
+                int x = currentShape.getSt().getX() + P2.getX() - P1.getX();
+                int y = currentShape.getSt().getY() + P2.getY() - P1.getY();
+                currentShape.setSt(new Point(x, y));
+            }
+            if (currentShape instanceof Line) {
+                Line l = (Line) currentShape;
+                int X2 = l.getTwo().getX() + P2.getX() - P1.getX();
+                int Y2 = l.getTwo().getY() + P2.getY() - P1.getY();
+                l.setTwo(new Point(X2, Y2));
+            } else if (currentShape instanceof Triangle) {
+                Triangle tri = (Triangle) currentShape;
+                int X2 = tri.getP2().getX() + P2.getX() - P1.getX();
+                int Y2 = tri.getP2().getY() + P2.getY() - P1.getY();
+                int X3 = tri.getP3().getX() + P3.getX() - P1.getX();
+                int Y3 = tri.getP3().getY() + P3.getY() - P1.getY();
+                tri.setP2(new Point(X2, Y2));
+                tri.setP3(new Point(X3, Y3));
+
+            }
+            P1 = new Point(evt.getX(), evt.getY());
+        } else if (current == modes.resize) {
+            if (resizedShape != null) {
+                resizedShape.resize(P1, P2);
+            }
+            P1 = new Point(evt.getX(), evt.getY());
+
+        }
+        repaint();
+    }//GEN-LAST:event_formMouseDragged
+    private class ShapeIterator implements Iterator {
+
+        int index;
+
+        @Override
+        public boolean hasNext() {
+            if (index < shapes.size()) {
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public Object next() {
+            if (hasNext()) {
+                return shapes.get(index++);
+            }
+            return null;
+        }
+
+    }
+    private void formMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseMoved
+        // TODO add your handling code here:
+        if (current == modes.Select) {
+            boolean inShape = false;
+            for (Shape shape : shapes) {
+                if (shape.inShape(evt.getX(), evt.getY())) {
+                    inShape = true;
+                    break;
+                }
+            }
+            if (inShape == true) {
+                this.setCursor(new Cursor(Cursor.MOVE_CURSOR));
+            } else {
+                this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+            }
+        } else if (current == modes.resize) {
+            if (currentShape != null) {
+                if (currentShape instanceof Rectangle) {
+                    Rectangle r = (Rectangle) currentShape;
+                    if (r.UpperLeft(evt.getX(), evt.getY())) {
+                        this.setCursor(new Cursor(Cursor.NW_RESIZE_CURSOR));
+                    } else if (r.LowerLeft(evt.getX(), evt.getY())) {
+                        this.setCursor(new Cursor(Cursor.SW_RESIZE_CURSOR));
+                    } else if (r.UpperRight(evt.getX(), evt.getY())) {
+                        this.setCursor(new Cursor(Cursor.NE_RESIZE_CURSOR));
+                    } else if (r.LowerRight(evt.getX(), evt.getY())) {
+                        this.setCursor(new Cursor(Cursor.SE_RESIZE_CURSOR));
+                    }
+                } else {
+                    this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                }
+                //else if
+
+            }
+        }
+    }//GEN-LAST:event_formMouseMoved
+    public void fill() {
+        if (currentShape != null) {
+            currentShape.setFill(true);
+            currentShape.setFilling(drawColor);
+            repaint();
+        }
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g); //To change body of generated methods, choose Tools | Templates.
+        //instead of for loop using design patern
+        Iterator iter = getIterator();
+        Graphics2D g2d = (Graphics2D) g;
+
+        AffineTransform old = g2d.getTransform();
+
+        while (iter.hasNext()) {
+            Shape shape = (Shape) iter.next();
+            g.setColor(shape.getC());
+            if (shape.degree > 0) {
+                g2d.rotate(Math.toRadians(shape.degree), shape.getSt().getX(), shape.getSt().getY());
+            } //            if (shape.isRotate()) {
+            //                g2d.rotate(Math.toRadians(45));
+            else {
+                g2d.setTransform(old);
+            }
+            if (shape instanceof Line) {
+                Line L = (Line) shape;
+                g.drawLine(L.getSt().getX(), L.getSt().getY(), L.getTwo().getX(), L.getTwo().getY());
+
+                if (L.isSelected()) {
+                    g.drawRect(L.getSt().getX() - 4, L.getSt().getY() - 4, 8, 8);
+                    g.drawRect(L.getTwo().getX() - 4, L.getTwo().getY() - 4, 8, 8);
+
+                }
+
+            } else if (shape instanceof Rectangle) {
+                Rectangle rect = (Rectangle) shape;
+                if (rect.isFill()) {
+                    g.fillRect(rect.getSt().getX(), rect.getSt().getY(), rect.getWidth(), rect.getHieght());
+                } else {
+                    g.drawRect(rect.getSt().getX(), rect.getSt().getY(), rect.getWidth(), rect.getHieght());
+
+                }
+                if (rect.isSelected()) {
+                    g.drawRect(rect.getSt().getX() - 4, rect.getSt().getY() - 4, 8, 8);
+                    g.drawRect(rect.getSt().getX() + rect.getWidth() - 4, rect.getSt().getY() - 4, 8, 8);
+                    g.drawRect(rect.getSt().getX() - 4, rect.getSt().getY() + rect.getHieght() - 4, 8, 8);
+                    g.drawRect(rect.getSt().getX() + rect.getWidth() - 4, rect.getSt().getY() + rect.getHieght() - 4, 8, 8);
+
+                }
+            } else if (shape instanceof Ellipse) {
+                Ellipse e = (Ellipse) shape;
+                g.drawOval(e.getSt().getX(), e.getSt().getY(), e.getWidth(), e.getHieght());
+                if (e.isFill()) {
+                    g.setColor(e.getFilling());
+                    g.fillOval(e.getSt().getX(), e.getSt().getY(), e.getWidth(), e.getHieght());
+                }
+
+                if (e.isSelected()) {
+                    g.setColor(BLACK);
+                    g.drawRect(e.getSt().getX() - 5, e.getSt().getY() - 5, 10, 10);
+                    g.drawRect(e.getSt().getX() + e.getWidth() - 5, e.getSt().getY() - 5, 10, 10);
+                    g.drawRect(e.getSt().getX() - 5, e.getSt().getY() + e.getHieght() - 5, 10, 10);
+                    g.drawRect(e.getSt().getX() + e.getWidth() - 5, e.getSt().getY() + e.getHieght() - 5, 10, 10);
+
+                }
+                
+                } else if (shape instanceof Triangle) {
+                    Triangle t = (Triangle) shape;
+                    Polygon p = new Polygon();
+                    p.addPoint(t.getSt().getX(), t.getSt().getY());
+                    p.addPoint(t.getP2().getX(), t.getP2().getY());
+                    p.addPoint(t.getP3().getX(), t.getP3().getY());
+                    if (t.isFill()) {
+                        g.fillPolygon(p);
+                    } else {
+                        g.drawPolygon(p);
+                    }
+                    
+                     if (t.isSelected()) {
+                    g.setColor(BLACK);
+                    g.drawRect(t.getSt().getX() - 5, t.getSt().getY() - 5, 10, 10);
+                     g.drawRect(t.getP2().getX() - 5, t.getP2().getY() - 5, 10, 10);
+                      g.drawRect(t.getP3().getX() - 5, t.getP3().getY() - 5, 10, 10);
+                    
+
+                }
+                } else if (shape instanceof Square) {
+                    Square s = (Square) shape;
+                    if (s.isFill()) {
+                        g.fillRect(s.getSt().getX(), s.getSt().getY(), s.getWidth(), s.getHieght());
+                    } else {
+                        g.drawRect(s.getSt().getX(), s.getSt().getY(), s.getWidth(), s.getHieght());
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // End of variables declaration//GEN-END:variables
+
